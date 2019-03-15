@@ -1,0 +1,1060 @@
+<!-- 创建报告组件 -->
+<template scope="scope">
+    <div class="single-region-page user-mamager">
+        <Panel  title="常用业务参数">
+            <el-row :gutter="150" type="flex" justify="center" >
+                <el-col :span='8' >
+                    <div style="float: left;">
+                        <td class="row-td-label">
+                            <span style="color:#FF0000;">*</span>
+                            <span>报告名称:</span>
+                        </td>
+                        <td class="row-td-value">
+                            <el-input
+                                v-model='portName'>
+                            </el-input>
+                        </td>
+                    </div>
+                </el-col>
+                <el-col :span='11' >
+                    <div style="float: left;">
+                        <td class="row-td-label">
+                            <span style="color:#FF0000;">*</span>
+                            <span>报告业务日期:</span>
+                        </td>
+                        <td class="row-td-value">
+                            <el-date-picker
+                                v-model="reportDate"
+                                type="date"
+                                value-format="yyyy-MM-dd"
+                                placeholder="==请选择日期=="
+                                :picker-options="pickerOptions0">
+                            </el-date-picker>
+                        </td>
+                    </div>
+                </el-col>
+            </el-row>
+            <el-row :gutter="150"  type="flex" justify="center" style="margin-top:20px;min-width: 690px;">
+                <el-col :span='8' >
+                    <div style="float: left;">
+                        <td class="row-td-label">
+                            <span style="color:#FF0000;">*</span>
+                            <span>报告周期:</span>
+                        </td>
+                        <td class="row-td-value">
+                            <el-select @change="disableReportDateSelect" v-model="reportCycle" placeholder="==请选择==">
+                                <el-option
+                                    v-for="item in lockes"
+                                    :key="item.value"
+                                    :label="item.label"
+                                    :value="item.value">
+                                </el-option>
+                            </el-select>
+                        </td>
+                    </div>
+                </el-col>
+                <el-col :span='11'>
+                    <div style="float: left;">
+                        <td class="row-td-label">
+                            <span style="color:#FF0000;">*</span>
+                            <span>数据起始日期:</span>
+                        </td>
+                        <td class="row-td-value">
+                            <el-date-picker
+                                v-model="startDate"
+                                type="date"
+                                :disabled="disableDate"
+                                value-format="yyyy-MM-dd"
+                                placeholder="==请选择日期=="
+                                :picker-options="pickerOptions0">
+                            </el-date-picker>
+                        </td>
+                    </div>
+                </el-col>
+            </el-row>
+            <el-row :gutter="150"  type="flex" justify="center" style="margin-top:20px;min-width: 690px;">
+                <el-col :span='8' >
+                    <div style="float: left;">
+                        <td class="row-td-label">
+                            <span style="color:#FF0000;">*</span>
+                            <span>计划选择:</span>
+                        </td>
+                        <td class="row-td-value">
+                            <el-select v-model="reportSchedule" placeholder="==请选择==">
+                                <el-option
+                                    v-for="item in scheduleList"
+                                    :key="item.id"
+                                    :label="item.name"
+                                    :value="item.id">
+                                </el-option>
+                            </el-select>
+                        </td>
+                    </div>
+                </el-col>
+                <el-col :span='11'>
+                    <div style="float: left;">
+                        <td class="row-td-label">
+                            <span style="color:#FF0000;">*</span>
+                            <span>数据终止日期:</span>
+                        </td>
+                        <td class="row-td-value">
+                            <el-date-picker
+                                v-model="endDate"
+                                type="date"
+                                :disabled="disableDate"
+                                value-format="yyyy-MM-dd"
+                                placeholder="==请选择日期=="
+                                :picker-options="pickerOptions1">
+                            </el-date-picker>
+                        </td>
+                    </div>
+                </el-col>
+            </el-row>
+            <el-row :gutter="150"  type="flex" justify="center" style="margin-top:20px;min-width: 690px;">
+                <el-col :span='8' >
+                    <div style="float: left;">
+                        <td class="row-td-label">
+                            <span style="color:#FF0000;">*</span>
+                            <span>报告模板:</span>
+                        </td>
+                        <td class="row-td-value">
+                            <el-select v-model="reportTemplate" placeholder="==请选择==" @change="enableParamsAndFlow">
+                                <el-option
+                                    v-for="item in templateList"
+                                    :key="item.VALUE"
+                                    :label="item.CAPTION"
+                                    :value="item.VALUE">
+                                </el-option>
+                            </el-select>
+                        </td>
+                    </div>
+                </el-col>
+                <el-col :span='11'>
+                    <el-button type="primary" :disabled='isDisabled' class="search-btn" @click="getParamsConfigTable">参数配置</el-button>
+                    <el-button type="primary" :disabled='isDisabled' class="search-btn" @click="getWorkflowConfigTable">流程配置</el-button>
+                </el-col>
+            </el-row>
+            <el-row :gutter="150"   type="flex" justify="center" style="margin-top:20px;min-width: 690px;">
+                <el-col :span='8' >
+                    <span style="color:#FF0000;">*</span>
+                    <span>web在线编辑:</span>
+                    <el-checkbox  :disabled="disableHtml" label="HTML" key="HTML" v-model="isEditChecked"  @change="handleWebCreate"></el-checkbox>
+                </el-col>
+                <el-col :span='11'>
+                    <span style="color:#FF0000;">*</span>
+                    <span>office编辑:</span>
+                    <el-checkbox  :disabled="disableOffice" label="office插件" key="office" v-model="isEditUnchecked"  @change="handlePluginCreate"></el-checkbox>
+                </el-col>
+            </el-row>
+            <el-row :gutter="150"   type="flex" justify="center" style="margin-top:40px;min-width: 690px;">
+                <el-col :span='10' >
+                    <el-button style="background-color:#2a76cd;color:#ffffff" class="search-btn" @click="createReportSchedule">创建任务</el-button>
+                    <el-button style="background-color:#2a76cd;color:#ffffff" class="search-btn" @click="CreateReport">创建报告</el-button>
+                    <el-button style="background-color:#2a76cd;color:#ffffff" class="search-btn" @click="resetAllField">重&nbsp;&nbsp;&nbsp;&nbsp;置</el-button>
+                </el-col>
+            </el-row>
+        </Panel>
+
+        <el-dialog title="报告参数" :visible.sync="collectParams" width="600px">
+            <el-table
+                :data="tableParamsData"
+                ref="table"
+                tooltip-effect="dark"
+                border
+                stripe
+                style="width: 95%">
+                <el-table-column  label="参数名称" align="center">
+                    <template slot-scope="scope">
+                        {{scope.row.caption}}
+                    </template>
+                </el-table-column>
+                <el-table-column label="参数代码">
+                    <template slot-scope="scope">
+                        {{scope.row.value}}
+                    </template>
+                </el-table-column>
+                <el-table-column label="参数值">
+                    <template slot-scope="scope">
+                        <el-input  v-model="scope.row.inputValue" ></el-input>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div slot="footer" class="dialog-footer" >
+                <el-button type="primary" @click="submitParamsconfigDialog">确 定</el-button>
+                <el-button @click="resetParamsField">重 置</el-button>
+            </div>
+        </el-dialog>
+
+        <el-dialog title="流程节点待办人" :visible.sync="collectWorkflowParams" width="600px">
+            <el-table
+                :data="tableWorkflowData"
+                ref="table"
+                tooltip-effect="dark"
+                border
+                stripe
+                style="width: 95%">
+                <el-table-column  label="办理人任务" align="center">
+                    <template slot-scope="scope">
+                        {{scope.row.handertasks}}
+                    </template>
+                </el-table-column>
+                <el-table-column label="节点处理人变量">
+                    <template slot-scope="scope">
+                        {{scope.row.handervars}}
+                    </template>
+                </el-table-column>
+                <el-table-column label="节点处理人">
+                    <template slot-scope="scope">
+                        <el-select v-model="scope.row.handers" filterable multiple >
+                            <el-option
+                                v-for="item in userOptions"
+                                :key="item.FLOGIN_CODE"
+                                :label="item.FNAME"
+                                :value="item.FLOGIN_CODE">
+                            </el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <div slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="submitFlowconfigDialog">确 定</el-button>
+                <el-button @click="resetWorkflowField">重 置</el-button>
+            </div>
+        </el-dialog>
+    </div>
+</template>
+
+<script>
+
+    import cloneDeep from 'lodash/cloneDeep';
+    import {queryTypeByCode,computeStatus,reportComputeReport,reportStartWorkflow,uploadDocBase,reportLCreate,reportGetTemplateList,reportGetUserList,reportGetFlowConfig,reportGetParamsConfig,reportGetSchedule,reportCreateSchedule,reportGetWorkflowKey} from '../../api/reportManage';
+    import {departmentTree, passwordReset, userDictQuery, authCopy} from '../../../base/api/authority';
+    import {arrayFind} from '@helper/commonUtil';
+    import Panel from '@components/Panel/Panel';
+    import Table from '@components/Table';
+    import Authority from '../../components/authorize/index';
+
+    const $reportLCreate = reportLCreate;
+    const $reportGetTemplateList = reportGetTemplateList;
+    const $reportGetUserList = reportGetUserList;
+    const $reportGetFlowConfig = reportGetFlowConfig;
+    const $reportGetParamsConfig = reportGetParamsConfig;
+    const $reportCreateSchedule = reportCreateSchedule;
+    const $reportGetSchedule = reportGetSchedule;
+    const $reportGetWorkflowKey = reportGetWorkflowKey;
+    const $reportComputeReport = reportComputeReport;
+    const $reportStartWorkflow = reportStartWorkflow;
+    const $uploadDocBase = uploadDocBase;
+    const $queryTypeByCode = queryTypeByCode;
+    const $computeStatus = computeStatus;
+
+    const $departmentTree = departmentTree;
+
+    export default {
+        name: "createReport",
+        data() {
+            let validateToUser = (rule, value, callback) => {
+                if (value === '') {
+                    callback(new Error('请选择接受人'));
+                } else if (value === this.copyForm.toUser) {
+                    callback(new Error('接受人不能与来源人相同'));
+                } else {
+                    callback();
+                }
+            };
+
+            return {
+                name: 'CreateReport.vue',
+                curUserId: '',
+                collectParams: false,
+                collectWorkflowParams: false,
+                tableWorkflowData: [],
+                selectedWorkflowUser:[],
+                userOptions: [ ],
+                isEditChecked: true,
+                isEditUnchecked: false,
+                disableDate: false,
+                isDisabled: true,
+                disableHtml: false,
+                disableOffice: false,
+                props: {
+                    value: 'id',
+                    label: 'deptName'
+                },
+                copyVisible: false,
+                copyForm: {
+                    fromUser: '',
+                    toUser: '',
+                    authType: '0'
+                },
+                copyRules: {
+                    fromUser: [{required: true, message: '请输入来源用户', trigger: 'blur'}],
+                    password: [{validator: validateToUser, trigger: 'blur'}]
+                },
+                selectedUsers: [],
+                lockes: [{label: '日报', value: 'DAY'},
+                    {label: '周报', value: 'WEEK'},
+                    {label: '月报', value: 'MONTH'},
+                    {label: '季报', value: 'SEASON'},
+                    {label: '半年报', value: 'MONTH6'},
+                    {label: '年报', value: 'YEAR'},
+                    {label: '自定义', value: 'ZDY'}],
+                locked: '',
+                scheduleList: [],
+                templateList:[],
+                portName: '',
+                reportDate: new Date(),
+                reportCycle: '',
+                reportTemplate: '',
+                lastReportTemplate: '',
+                reportTemplateChg: false,
+                startDate: new Date(),
+                endDate: new Date(),
+                portShowType: true,
+                reportSchedule: [],
+                currentPage: 1,
+                formLabelWidth: '120px',
+                tableParamsData: [],
+                submitParamList: [],
+                workflowDefineKey: '',
+                paramsColumns: [
+                    {
+                        prop: 'reportCycle',
+                        label: '参数名称',
+                        maxWidth: 180
+                    }, {
+                        prop: 'reportDate',
+                        label: '参数代码',
+                        'show-overflow-tooltip': true,
+                        maxWidth: 180
+                    }, {
+                        prop: 'reportDate',
+                        label: '参数值',
+                        'show-overflow-tooltip': true,
+                        maxWidth: 180
+                    }, {
+                        prop: 'action',
+                        label: '操作',
+                        maxWidth: 180,
+                        render: function (h, {record}) {
+                            return h('div', {}, acts.map(item => {
+                                return h('el-button', {
+                                    props: {
+                                        type: 'text',
+                                        size: 'small'
+                                    },
+                                    on: {
+                                        click: () => item.onClick(record)
+                                    }
+                                }, item.text);
+                            }));
+                        }
+                    }
+                ]
+            };
+        },
+        components: {
+            Panel,
+            Authority,
+            Table
+        },
+        methods: {
+            handleSizeChange(val) {
+                this.limit = val;
+                this.getUsers(this.currentPage, this.limit, this.department[this.department.length - 1], this.inputSearch);
+            },
+            handleCurrentChange(val) {
+                this.currentPage = val;
+                this.getUsers(this.currentPage, this.limit, this.department[this.department.length - 1], this.inputSearch);
+            },
+            doQuery() {
+                this.getUsers(this.currentPage, this.limit, this.portType, this.portCycle, this.portStartDate, this.portEndDate);
+            },
+            getAllSchedule(){
+                //获取所有创建的计划任务$reportGetSchedule,计划列表存储与scheduleList[]
+                let params={};
+                params.userId = this.curUserId;
+                $reportGetSchedule(params).then(({data}) => {
+                    if(data.rows.length > 0){
+                        //let failTable ={};
+                        this.scheduleList = data.rows;
+                    }
+                });
+            },
+            disableReportDateSelect(){
+
+                if(this.reportCycle != 'ZDY' && this.reportCycle != ''){
+                    this.disableDate = true;
+                }else{
+                    this.disableDate = false;
+                }
+            },
+            createReportSchedule(){
+                //创建计划任务$reportCreateSchedule,所选计划存储与reportSchedule，
+                if(this.portName == ''){
+                    this.$alert("请先填写报告名称");
+                    return false;
+                }
+                if(this.reportCycle == ''){
+                    this.$alert("请先填写报告周期");
+                    return false;
+                }
+
+                if(this.reportSchedule == ''){
+                    this.$alert("请先选择计划");
+                    return false;
+                }
+                if(this.reportTemplate == ''){
+                    this.$alert("请先选择要使用的模板");
+                    return false;
+                }
+                if(this.reportDate == ''){
+                    this.$alert("请先选择报告业务日期");
+                    return false;
+                }
+                if(this.tableWorkflowData.length==0){
+                    //能走到这一步，说明选择了模板，这里为0代表这个模板没有流程配置
+                    // this.$alert("请先填写流程配置");
+                    // return false;
+                }else{
+                    for(let i=0;i<this.tableWorkflowData.length;i++){
+                        if(this.tableWorkflowData[i].handers.length == 0){
+                            this.$alert("发现有环节处理人为空，请检查");
+                            return false;
+                        }
+                    }
+                }
+
+                let params = {};
+                //选择的计划
+                let choosenTrigger = this.scheduleList.filter(item => item.id === this.reportSchedule)[0];
+                console.log(choosenTrigger);
+                //选择的人员id
+                let choosenUser = this.userOptions.filter(item => item.FLOGIN_CODE === this.curUserId)[0];
+                let createData = this.getCreateData();
+                console.log(createData);
+                console.log(JSON.stringify(createData).replace(/,/g,
+                    '@'));
+                let json = {
+                    creatorId : choosenUser.FID,
+                    description : "",
+                    errorHandler : "0",
+                    name : this.portName,
+                    order : "1",
+                    overLap : true,
+
+                    paramObject : [
+                        {
+                            "paramCode" : "createReportParams",
+                            "paramName" : "创建报告参数",
+                            "valueName" : "创建报告参数",
+                            "paramValue" : JSON.stringify(createData).replace(/,/g,
+                                '@')
+                        },
+                        {
+                            "paramCode" : "executeReportParams",
+                            "paramName" : "报告执行计算参数",
+                            "valueName" : "报告执行计算参数",
+                            "paramValue" : JSON.stringify(this.submitParamList)
+                                .replace(/,/g, '@')
+                        } ],
+
+                    taskCode : "com.yss.ams.reportviewer.task.hand.CreateReportTask",
+                    taskOldValues : "",
+                    taskParamValue : "",
+                    taskType : "Single",
+                    triggerId : choosenTrigger.id,
+                    triggerName : choosenTrigger.name
+                };
+                $reportCreateSchedule(this.ext_encodeJSON(json)).then(({data}) => {
+                    // console.log("======jiahuachuangjian================");
+                    // console.log(data);
+                    // let msg = JSON.parse(data.message);
+                    this.$alert("任务创建成功。");
+                });
+
+            },
+            startWorkflow(msg){
+                //发起流程$reportStartWorkflow
+                let flownInfoarr = new Array();
+                console.log(msg.successPorts);
+                //msg = JSON.parse(msg);
+                flownInfoarr = this.tableWorkflowData;
+                //flownInfo:JSON.stringify(flownInfoarr)
+                //还要传userId，templateCode，reportDate，startDate，endDate，reportCode，flownInfo，processDefinitionKey
+                let params = {
+                    reportCode : msg.successPorts,
+                    processDefinitionKey: msg.processDefinitionKey,
+                    flownInfo:flownInfoarr,
+                    userId : this.curUserId,
+                    templateCode : this.reportTemplate,
+                    reportDate:this.reportDate==""?"":this.getCurTimeFormat(this.reportDate),
+                    startDate:this.startDate==""?"":this.getCurTimeFormat(this.startDate),
+                    endDate :this.endDate==""?"":this.getCurTimeFormat(this.endDate),
+                    showType : this.isEditChecked
+                };
+                console.log("====发起流程前端传值====");
+                console.log(params);
+                $reportStartWorkflow(JSON.stringify(params)).then(({data}) =>{
+                    console.log("流程发起成功");
+                });
+            },
+            computeNewReport(msg){
+                //计算报告
+                let task_codes= msg.useRetemplate;
+                // id
+                let port_codes=msg.successPorts;
+                // 一些时间的拼装
+                let reportDate=msg.reportDate;
+                let startDate=msg.startDate;
+                let endDate=msg.endDate;
+                let showType= msg.showType;
+                let params ={};
+                params.tasks =task_codes;
+                params.gzdate = reportDate + ' 00:00:00';
+                params.startDate = startDate + ' 00:00:00';
+                params.endDate = endDate + ' 00:00:00';
+                params.portcodes=port_codes;
+                params.exeFlag =exe_flag;
+                params.xbrl_flag='1';
+                $reportComputeReport(params).then(({data}) => {
+                    //如果成功,插件生成方式
+                    if(showType != 'true'){
+                        let docdata ={portCode:port_codes,reportDate:reportDate,reportTemplateCode:task_codes};
+                        let docUrl ="batchDownloadWord?data="+encodeURI(JSON.stringify(docdata))+"&flag=true";
+                        $uploadDocBase(docUrl).then(({data}) =>{
+                            console.log("文档库上传成功");
+                        });
+                    }
+                });
+            },
+            handleWebCreate(val) {
+                if(val){
+                    this.isEditUnchecked = false;
+                    this.portShowType = true;
+                }else{
+                    this.isEditUnchecked = true;
+                    this.portShowType = false;
+                }
+            },
+            handlePluginCreate(val) {
+                if(val){
+                    this.isEditChecked = false;
+                    this.portShowType = false;
+                }else{
+                    this.isEditChecked = true;
+                    this.portShowType = true;
+                }
+            },
+            enableParamsAndFlow(){
+                //将当前选择的模板类型存储起来
+                if(this.lastReportTemplate == this.reportTemplate){
+                    this.reportTemplateChg = false;
+                }else{
+                    this.reportTemplateChg = true;
+                    this.lastReportTemplate = this.reportTemplate;
+                }
+
+                //选完模板后，判断模板的类型，然后决定是选中html还是插件
+                if(this.reportTemplate.endsWith('_xls') || this.reportTemplate.endsWith('_xlsx') || this.reportTemplate.endsWith('_ppt') || this.reportTemplate.endsWith('_pptx')){
+                    this.isEditChecked = false;
+                    this.portShowType = false;
+                    this.isEditUnchecked = true;
+                    this.disableHtml = true;
+                    this.disableOffice = true;
+                }else{
+                    this.isEditChecked = true;
+                    this.portShowType = true;
+                    this.isEditUnchecked = false;
+                    this.disableHtml = false;
+                    this.disableOffice = false;
+                }
+                //获取模板类型
+                let params={};
+                params.templateCode = this.reportTemplate;
+
+                $queryTypeByCode(params).then( ({data})=>{
+                    if(data.rows[0] =="Mixed"){
+                        this.isEditChecked = true;
+                        this.portShowType = true;
+                        this.isEditUnchecked = false;
+                        this.disableHtml = true;
+                        this.disableOffice = true;
+
+                    }
+                });
+
+                //let templateType = this.templateList.filter(item => item.VALUE === this.reportTemplate)[0];
+                //选择完模板后，参数配置和流程配置的按钮才可选
+                if(this.reportTemplate != ''){
+                    this.isDisabled = false;
+                    //获取流程定义key
+                    this.getWorkflowDefineKey(this.reportTemplate);
+                }else{
+                    this.isDisabled = true;
+                }
+            },
+            getParamsConfigTable() {
+                //需要根据选择的模板this.reportTemplate,$reportGetParamsConfig
+                let choosenDefineKey = this.templateList.filter(item => item.VALUE === this.reportTemplate)[0];
+                let params ={};
+                params.templateCode = this.reportTemplate;
+                //this.tableParamsData = [];
+                if((this.reportTemplateChg ==true)||this.tableParamsData.length==0){
+                    $reportGetParamsConfig(params).then(({data}) => {
+                        let dictionarys = data.rows;
+                        if(dictionarys.length === 0){
+                            //let failTable ={};
+                            // failTable.id = '';
+                            // failTable.caption='';
+                            // failTable.value = '';
+                            // failTable.key = '';
+                            // this.tableParamsData.push(failTable);
+                            this.$alert("该模板没有对应的参数配置");
+                        }else{
+                            this.tableParamsData =[];
+                            for(var i=0;i<dictionarys.length;i++){
+                                let tempVal = {};
+                                tempVal.id = dictionarys[i].id;
+                                tempVal.caption = dictionarys[i].caption;
+                                tempVal.value = dictionarys[i].value;
+                                tempVal.key = dictionarys[i].key;
+                                this.tableParamsData.push(tempVal);
+                            }
+                            this.reportTemplateChg=false;
+                            this.collectParams = true;
+                        }
+
+                    });
+                }else{
+                    this.collectParams = true;
+                }
+
+            },
+            submitFlowconfigDialog(){
+                //获取到了用户选择的
+                this.collectWorkflowParams = false;
+            },
+            submitParamsconfigDialog(){
+                //获取到了用户输入的字段放在this.tableParamsData[0].inputValue，日期caption，代码value
+                this.submitParamList =[];
+                for(let i=0;i<this.tableParamsData.length;i++){
+                    let tmpParamsTable = {};
+                    tmpParamsTable.N_NO = this.tableParamsData[i].id;
+                    tmpParamsTable.C_CAPTION = this.tableParamsData[i].caption;
+                    tmpParamsTable.C_VALUE = this.tableParamsData[i].value;
+                    tmpParamsTable.N_KEY = this.tableParamsData[i].inputValue ;
+                    tmpParamsTable.id = '';
+                    this.submitParamList.push(tmpParamsTable);
+                }
+                this.collectParams = false;
+            },
+            getWorkflowDefineKey(code){
+                let  params = {};
+                params.templateCode = code;
+                $reportGetWorkflowKey(params).then(({data}) => {
+                    if(data.rows.length ===0){
+                        this.workflowDefineKey = "";
+                    }else{
+                        this.workflowDefineKey = data.rows[0].flowDefineKey;
+                    }
+
+                });
+            },
+            getWorkflowConfigTable() {
+                if(this.reportTemplate ==''){
+                    this.$alert("请选选择报告模板");
+                    return false;
+                }
+                // let choosenDefineKey = this.templateList.filter(item => item.VALUE === this.reportTemplate)[0];
+                let params ={};
+                let workflowDefineKey = this.workflowDefineKey;
+                if(workflowDefineKey  === ""){
+                    this.$alert("所选模板没有流程定义，无法添加流程配置");
+                    return false;
+                }
+                //加载人员,先将存储人员的数组置空
+                this.userOptions = [];
+                this.getAllUser();
+                //如果模板有变化，就将存储流程配置的表格置空，否则不变
+                if((this.reportTemplateChg==true )||this.tableWorkflowData.length==0){
+                    //this.tableWorkflowData = [];
+                    params.flowDefineKey = workflowDefineKey;
+                    $reportGetFlowConfig(params).then(({data}) => {
+                        if(data.rows.length === 0){
+                            // let failTable ={};
+                            // failTable.handertasks = '';
+                            // failTable.handervars = '';
+                            // failTable.id = '';
+                            // this.tableWorkflowData.push(failTable);
+                            this.$alert("所选模板没有配置流程");
+                        }else{
+                            this.tableWorkflowData=[];
+                            let dictionarys = data.rows[0];
+                            let dicParams = dictionarys.params;
+                            let dicCaptions = dictionarys.caption;
+                            let dicparam = dicParams.split(",");
+                            let dicCaption = dicCaptions.split(",");
+                            for(var i=1;i<dicparam.length;i++){
+                                let tempVal = {};
+                                tempVal.handertasks = dicCaption[i];
+                                tempVal.handervars = dicparam[i];
+                                tempVal.id = dictionarys.id;
+                                this.tableWorkflowData.push(tempVal);
+                            }
+                            this.reportTemplateChg=false;
+                            this.collectWorkflowParams = true;
+                        }
+                    });
+                }
+
+            },
+            handleWorkflowUser(){
+                console.log("选择流程处理人员的函数");
+            },
+            getCurTimeFormat(timeStamp){
+                let year = new Date(timeStamp).getFullYear();
+                let month =new Date(timeStamp).getMonth() + 1 < 10? "0" + (new Date(timeStamp).getMonth() + 1): new Date(timeStamp).getMonth() + 1;
+                let date =new Date(timeStamp).getDate() < 10? "0" + new Date(timeStamp).getDate(): new Date(timeStamp).getDate();
+                let hh =new Date(timeStamp).getHours() < 10? "0" + new Date(timeStamp).getHours(): new Date(timeStamp).getHours();
+                let mm =new Date(timeStamp).getMinutes() < 10? "0" + new Date(timeStamp).getMinutes(): new Date(timeStamp).getMinutes();
+                let ss =new Date(timeStamp).getSeconds() < 10? "0" + new Date(timeStamp).getSeconds(): new Date(timeStamp).getSeconds();
+                return year + "-" + month + "-" + date +" "+hh+":"+mm+":"+ss ;
+            },
+            handleCollectFlowParams(){
+                this.getWorkflowConfigTable();
+            },
+            getAllTemplate(){
+                let params = {};
+                params.userId = this.curUserId;
+                $reportGetTemplateList(params).then(({data}) => {
+                    this.templateList = data.rows;
+                });
+            },
+            getAllUser(){
+                $reportGetUserList().then(({data}) => {
+                    this.userOptions = data.rows;
+                });
+            },
+            getCreateData(){
+                //收集页面参数，组装为json，供创建报告和任务使用。
+                let params = {};
+                //无需通过表单收集的字段，直接放空值或默认值
+                params.id = '';
+                params.portCode='';
+                params.portName = this.portName;
+                //模板参数
+                let choosenTemplate = this.templateList.filter(item => item.VALUE === this.reportTemplate)[0];
+                params.reportTemplate = {};
+                params.reportTemplate.value = choosenTemplate.VALUE;
+                params.reportTemplate.caption =choosenTemplate.CAPTION;
+                params.reportTemplate.id =choosenTemplate.ID;
+                params.reportTemplate.key =choosenTemplate.KEY;
+                params.reportTemplate.params =choosenTemplate.PARAMS;
+                params.reportDate = this.reportDate==""?"":this.getCurTimeFormat(this.reportDate);
+                params.submitDate = this.reportDate==""?"":this.getCurTimeFormat(this.reportDate);
+                params.reportType = {};
+                params.reportType.value = choosenTemplate.VALUE;
+                params.reportType.caption =choosenTemplate.CAPTION;
+                params.reportType.id =choosenTemplate.ID;
+                params.reportType.key =choosenTemplate.KEY;
+                params.reportType.params =choosenTemplate.PARAMS;
+                params.reportNo = ' ';
+                params.createTime=this.getCurTimeFormat(new Date());
+                params.createUser =this.curUserId;
+                params.showType =this.portShowType;
+                params.startDate = this.startDate==""?"":this.getCurTimeFormat(this.startDate);
+                params.endDate = this.endDate==""?"":this.getCurTimeFormat(this.endDate);
+                //报告周期
+                params.reportCycle = this.reportCycle;
+                //设置stateVo
+                params.stateVo = {};
+                params.stateVo.key = '1018';
+                params.stateVo.value = '1';
+                params.stateVo.caption = '未审核';
+                params.stateVo.params = '';
+                params.stateVo.id = '133';
+                //流程配置params.flownHanderInfo = this.tableWorkflowData;
+                let tempFlowInfo ='';
+                if(this.tableWorkflowData.length ===0){
+                    params.flownHanderInfo ='';
+                }else{
+                    for (let i=0;i<this.tableWorkflowData.length;i++){
+                        tempFlowInfo =tempFlowInfo+JSON.stringify(this.tableWorkflowData[i])+",";
+                    }
+                    tempFlowInfo = tempFlowInfo.substring(0,tempFlowInfo.length-1);
+                    tempFlowInfo="["+tempFlowInfo+"]";
+                    params.flownHanderInfo =tempFlowInfo;
+                }
+                return params;
+            },
+            createReport() {
+                //开始创建报告
+                if(this.portName == ''){
+                    this.$alert("请先填写报告名称");
+                    return false;
+                }
+                if(this.reportCycle == ''){
+                    this.$alert("请先填写报告周期");
+                    return false;
+                }
+                if(this.reportTemplate == ''){
+                    this.$alert("请先选择要使用的模板");
+                    return false;
+                }
+                if(this.reportDate == ''){
+                    this.$alert("请先选择报告业务日期");
+                    return false;
+                }
+                if(this.tableWorkflowData.length==0){
+                    //能走到这一步代表已经选择了模板，但是对应的流程不需要流程配置
+                    // this.$alert("请先填写流程配置");
+                    // return false;
+                }else{
+                    for(let i=0;i<this.tableWorkflowData.length;i++){
+                        if(this.tableWorkflowData[i].handers.length == 0){
+                            this.$alert("发现有环节处理人为空，请检查");
+                            return false;
+                        }
+                    }
+                }
+                let topParams ={};
+                topParams.json =this.getCreateData();
+                topParams.paramList = this.submitParamList;
+                topParams.userId = this.curUserId;
+                $reportLCreate(topParams).then(({ data }) => {
+                    if(data.total>0){
+                        console.log("======创建报告返回值=======");
+                        console.log(data.message);
+                        let msg ={};
+                        msg = eval('(' + data.message + ')');
+                        //创建报告后开始计算报告，发起流程，都放在发起流程的操作中。
+                        this.startWorkflow(msg);
+                        // this.computeNewReport(msg);
+                        this.$alert('报告创建成功');
+                    }else{
+                        this.$alert('报告创建失败');
+                    }
+
+                });
+
+            },
+            resetAllField(){
+                //清空创建报告的域
+                this.portName = "";
+                this.reportDate = "";
+                this.reportCycle = "";
+                this.startDate = new Date();
+                this.reportSchedule = "";
+                this.endDate = new Date();
+                this.reportTemplate = "";
+                this.disableDate = false;
+                this.isDisabled = true;
+            },
+            resetParamsField(){
+                //清空填写参数的域
+                if(this.tableParamsData.length>0){
+                    for(let i=0;i<this.tableParamsData.length;i++){
+                        this.tableParamsData[i].inputValue='';
+                    }
+                }
+            },
+            resetWorkflowField(){
+                //清空流程信息的域
+                if(this.tableWorkflowData.length>0){
+                    for(let i=0;i<this.tableWorkflowData.length;i++){
+                        this.tableWorkflowData[i].handers=[];
+                    }
+                }
+            },
+            getUsers(page, limit) {
+                let params = {page: page, limit: limit};
+                if (this.portType !== '') {
+                    params.portType = this.portType;
+                }
+                params.portType = this.portType;
+                params.portStartDate = this.portStartDate;
+                params.portEndDate = this.portEndDate;
+                params.portCycle = this.portCycle;
+                params.userId = this.curUserId;
+
+                $reportListQuery(params).then(({ data }) => {
+                    this.loading = false;
+                    this.tableData = data.rows;
+                    this.total = data.total;
+                });
+            },
+            handleAuthCopy () {
+                userDictQuery().then(({data}) => {
+                    this.selectedUsers = data;
+                });
+                this.copyVisible = true;
+            },
+            submitCopyForm (formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        authCopy(this.copyForm).then(({error}) => {
+                            if (!error) {
+                                this.$notify.success({
+                                    title: '操作成功',
+                                    message: '权限复制成功'
+                                });
+                                this.copyVisible = false;
+                            } else {
+                                this.$notify.error({
+                                    title: '操作失败',
+                                    message: error.message
+                                });
+                            }
+                        });
+                    } else {
+                        return false;
+                    }
+                });
+            },
+            doPasswordReset (id) {
+                passwordReset(id).then(({error}) => {
+                    this.$notify.success({
+                        title: '成功',
+                        message: '密码已被重置为123456'
+                    });
+                });
+            },
+            ext_encodeJSON (o) {
+                if (!this.ext_isDefined(o) || o === null) {
+                    return "null";
+                } else if (this.ext_isArray(o)) {
+                    return this.ext_encodeArray(o);
+                } else if (this.ext_isDate(o)) {
+                    return this.ext_encodeDate(o);
+                } else if (this.ext_isString(o)) {
+                    return this.ext_encodeString(o);
+                } else if (typeof o == "number") {
+                    //don't use isNumber here, since finite checks happen inside isNumber
+                    return isFinite(o) ? String(o) : "null";
+                } else if (this.ext_isBoolean(o)) {
+                    return String(o);
+                } else {
+                    var a = ["{"], b, i, v;
+                    for (i in o) {
+                        // don't encode DOM objects
+                        if (!o.getElementsByTagName) {
+                            if (o.hasOwnProperty(i)) {
+                                v = o[i];
+                                switch (typeof v) {
+                                    case "undefined":
+                                    case "function":
+                                    case "unknown":
+                                        break;
+                                    default:
+                                        if (b) {
+                                            a.push(',');
+                                        }
+                                        a.push(this.ext_encodeJSON(i), ":",
+                                            v === null ? "null" : this.ext_encodeJSON(v));
+                                        b = true;
+                                }
+                            }
+                        }
+                    }
+                    a.push("}");
+                    return a.join("");
+                }
+            },
+            ext_pad(n) {
+                return n < 10 ? "0" + n : n;
+            },
+            ext_isDefined(v) {
+                return typeof v !== 'undefined';
+            },
+            ext_isArray(v) {
+                return toString.apply(v) === '[object Array]';
+            },
+            ext_isDate(v) {
+                return toString.apply(v) === '[object Date]';
+            },
+            ext_isString(v) {
+                return typeof v === 'string';
+            },
+            ext_isBoolean(v) {
+                return typeof v === 'boolean';
+            },
+            ext_encodeString(s) {
+                let m = {
+                    "\b": '\\b',
+                    "\t": '\\t',
+                    "\n": '\\n',
+                    "\f": '\\f',
+                    "\r": '\\r',
+                    '"': '\\"',
+                    "\\": '\\\\'
+                };
+                if (/["\\\x00-\x1f]/.test(s)) {
+                    return '"' + s.replace(/([\x00-\x1f\\"])/g, function (a, b) {
+                        var c = m[b];
+                        if (c) {
+                            return c;
+                        }
+                        c = b.charCodeAt();
+                        return "\\u00" +
+                            Math.floor(c / 16).toString(16) +
+                            (c % 16).toString(16);
+                    }) + '"';
+                }
+                return '"' + s + '"';
+            },
+            ext_encodeArray (o) {
+                var a = ["["], b, i, l = o.length, v;
+                for (i = 0; i < l; i += 1) {
+                    v = o[i];
+                    switch (typeof v) {
+                        case "undefined":
+                        case "function":
+                        case "unknown":
+                            break;
+                        default:
+                            if (b) {
+                                a.push(',');
+                            }
+                            a.push(v === null ? "null" : this.ext_encodeJSON(v));
+                            b = true;
+                    }
+                }
+                a.push("]");
+                return a.join("");
+            },
+            ext_encodeDate(o) {
+                return '"' + o.getFullYear() + "-" +
+                    ext_pad(o.getMonth() + 1) + "-" +
+                    ext_pad(o.getDate()) + "T" +
+                    ext_pad(o.getHours()) + ":" +
+                    ext_pad(o.getMinutes()) + ":" +
+                    ext_pad(o.getSeconds()) + '"';
+            }
+        },
+        created(){
+            this.getAllTemplate(this.curUserId);
+            this.getAllSchedule();
+        }
+
+    };
+</script>
+<style lang="scss" scoped>
+    .user-mamager {
+        .el-col {
+            margin-bottom: 10px;
+        }
+
+        .list-actions {
+            float: right;
+            margin: 0 20px 10px 20px;
+        }
+    }
+    .row-td-value{
+        width:222px
+    }
+    .row-td-label{
+        width:140px
+    }
+</style>
