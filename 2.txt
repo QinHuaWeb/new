@@ -1,0 +1,506 @@
+<!-- 报告列表组件 -->
+<template >
+    <div class="single-region-page user-mamager">
+        <div style="height: 10px"></div>
+        <Panel  title="查询条件">
+            <el-row  :gutter="20" style="margin-right: 20px; min-width: 690px;">
+                <el-col :span='8'>
+                    <span style="color:#FF0000;">*</span>
+                    <span>流水号:</span>
+                    <el-input
+                        placeholder='请输入关键字'
+                        style="width: 200px;"
+                        class="input-search"
+                        v-model='flowsn'>
+                    </el-input>
+                </el-col>
+                <el-col :span='8'>
+                    <span style="color:#FF0000;">*</span>
+                    <span>报告名称:</span>
+
+                    <el-input
+                        placeholder='请输入关键字'
+                        class="input-search"
+                        style="width: 200px;"
+                        v-model='reportName'>
+                    </el-input>
+                </el-col>
+                <el-col :span='8'>
+                    <span style="color:#FF0000;">*</span>
+                    <span>任务名称:</span>
+                    <el-input
+                        placeholder='请输入关键字'
+                        class="input-search"
+                        style="width: 200px;"
+                        v-model='taskName'>
+                    </el-input>
+                </el-col>
+                <el-col :span='8'>
+                    <span style="color:#FF0000;">*</span>
+                    <span>发起人:</span>
+                    <el-input
+                        placeholder='请输入关键字'
+                        class="input-search"
+                        style="width: 200px;"
+                        v-model='frontOperator'>
+                    </el-input>
+                </el-col>
+                <el-col  :span='6' :offset="2" style="marginTop: 40px"  >
+                    <el-button  class="search-btn" type="primary" @click="doQuery">查询</el-button>
+                    <el-button  class="search-btn" @click="resetQuery">重置</el-button>
+                </el-col>
+            </el-row>
+        </Panel>
+        <Panel
+            title="查询结果"
+            :actions="actions"
+        >
+            <Table
+                :data-source="tableData"
+                :columns="columns"
+                :loading="loading"
+                hasPagination
+                @handleSize='handleSizeChange'
+                @handleCurrent='handleCurrentChange'
+                @selectionChange='handleSelectionChange'
+                :total='total'
+                :current-page='currentPage'
+                :page-size='10'
+                :pagerCount='defaultPagerCount'
+                :layout="`total, sizes, prev, pager, next, jumper`"
+            ></Table>
+        </Panel>
+
+        <el-dialog title="办理任务" :visible.sync="copyVisible" width="600px"  center>
+
+            <el-collapse  v-model="expandComments">
+                <el-collapse-item  title="历史批注" name="1" >
+                    <div v-html="comments"></div>
+                </el-collapse-item>
+            </el-collapse>
+            <!-- <el-row>
+              <el-col :span="24" class="box">
+                <el-collapse v-model="expendInputComment"  >
+                  <el-collapse-item  title="审批意见" name="2" >
+                    <div class="box-list">
+                      <el-input type='textarea' :rows="4"  v-model="inputComment" :maxlength="150"></el-input>
+                    </div>
+                  </el-collapse-item>
+                </el-collapse>
+              </el-col>
+            </el-row> -->
+            <!-- <span slot="footer">
+              <el-button type="primary" @click="reviewAgree">审核通过</el-button>
+              <el-button @click="reviewReject">审核驳回</el-button>
+            </span> -->
+        </el-dialog>
+        <el-dialog title="查看报告" :visible.sync="showReport" @close="showReport = false" width="1250px" height="668px" center>
+
+            <div>
+                <iframe id="reportWindow" :src="reportPath" style="width: 1180px; height: 600px"
+                ></iframe>
+            </div>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="showReport = false">关闭</el-button>
+            </div>
+        </el-dialog>
+        <div title="login" v-show="false" @close="showLoginContent = false" width="1250px" height="668px" center >
+            <div>
+                <iframe id="loginWindow" :src="loginPath" style="width: 1180px; height: 600px"
+                ></iframe>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+
+    import cloneDeep from 'lodash/cloneDeep';
+    import {getReportById,reportFinishTask,reportMyFinishTask,queryHistoryComments,complateTask,rejectTask} from '../../api/reportManage';
+    import {departmentTree, passwordReset, userDictQuery, authCopy} from '../../../base/api/authority';
+    import {arrayFind,server_host} from '@helper/commonUtil';
+    import Panel from '@components/Panel/Panel';
+    import Table from '@components/Table';
+    import mixin from './mixin';
+    import Authority from '../../components/authorize/index';
+    import ElementUI from 'element-ui'
+    import 'element-ui/lib/theme-chalk/index.css';
+
+    const $reportMyFinishTask = reportMyFinishTask;
+    const $queryHistoryComments = queryHistoryComments;
+    const $complateTask = complateTask;
+    const $rejectTask = rejectTask;
+    const $reportFinishTask = reportFinishTask;
+    const $departmentTree = departmentTree;
+    const $getReportById = getReportById;
+
+
+    export default {
+
+        data() {
+            const acts = [
+                {
+                    text: '查看',
+                    onClick: this.checkReportDetail
+                },
+                {
+                    text: '办理',
+                    onClick: this.reviewReport
+                }
+            ];
+
+            let validateToUser = (rule, value, callback) => {
+                if (value === '') {
+                    callback(new Error('请选择接受人'));
+                } else if (value === this.copyForm.toUser) {
+                    callback(new Error('接受人不能与来源人相同'));
+                } else {
+                    callback();
+                }
+            };
+            name: 'TaskManage';
+            mixins: [mixin];
+            return {
+                name: 'TaskManage',
+                curUserId: '',
+                comments: '',
+                expandComments: '1',
+                inputComment: '',
+                expendInputComment: '2',
+                defaultPagerCount: 5,
+                showReport: false,
+                showLoginContent:false,
+                reportPath: '',
+                loginPath: "",
+                copyVisible: false,
+                copyForm: {
+                    fromUser: '',
+                    toUser: '',
+                    authType: '0'
+                },
+                copyRules: {
+                    fromUser: [{required: true, message: '请输入来源用户', trigger: 'blur'}],
+                    password: [{validator: validateToUser, trigger: 'blur'}]
+                },
+                selectedUsers: [],
+                flowsn: '',
+                reportName: '',
+                taskName: '',
+                frontOperator: '',
+                currentPage: 1,
+                limit: 10,
+                total: 0,
+                tableData: [],
+                loading: false,
+                currentRow: {},
+                formLabelWidth: '120px',
+                columns: [
+                    {
+                        type: 'selection',
+                        width: 50
+                    },
+                    {
+                        type: 'index',
+                        label: '序号',
+                        width: 50
+                    },
+                    {
+                        prop: 'reportName',
+                        label: '报告名称',
+                        maxWidth: 216
+                    },
+                    {
+                        prop: 'tempateName',
+                        label: '模板名称',
+                        maxWidth: 216
+                    },
+                    {
+                        prop: 'taskCreateTime',
+                        label: '任务创建时间',
+                        width: 220
+                    }, {
+                        prop: 'serialName',
+                        maxWidth: 230,
+                        label: '流程名称',
+                        'show-overflow-tooltip': true
+                    }, {
+                        prop: 'taskName',
+                        label: '任务名称',
+                        maxWidth: 216
+                    }, {
+                        prop: 'taskId',
+                        label: '任务ID',
+                        maxWidth: 150
+                    }, {
+                        prop: 'frontOperator',
+                        label: '发起人',
+                        maxWidth: 150
+                    }, {
+                        prop: 'action',
+                        label: '操作',
+                        maxWidth: 216,
+                        render: function (h, {record}) {
+                            return h('div', {}, acts.map(item => {
+                                return h('el-button', {
+                                    props: {
+                                        type: 'text',
+                                        size: 'small'
+                                    },
+                                    on: {
+                                        click: () => item.onClick(record)
+                                    }
+                                }, item.text);
+                            }));
+                        }
+                    }
+                ]
+
+            };
+        },
+        components: {
+            Panel,
+            Authority,
+            Table
+        },
+        methods: {
+            handleSizeChange(val) {
+                this.limit = val;
+                this.currentPage = 1;
+
+                let params = {};
+                params._startRow=this.total;
+                params._rowCount =this.limit;
+                params.userId = this.curUserId;
+                let json = {};
+                json.flowsn = this.flowsn;
+                json.reportName = this.reportName;
+                json.taskName = this.taskName;
+                json.frontOperator = this.frontOperator;
+                params._jsonData =json;
+
+                this.getUsers(this.currentPage, this.limit, params);
+            },
+            handleCurrentChange(val) {
+                this.currentPage = val;
+
+                let params = {};
+                params._startRow=this.total;
+                params._rowCount =this.limit;
+                params.userId = this.curUserId;
+                let json = {};
+                json.flowsn = this.flowsn;
+                json.reportName = this.reportName;
+                json.taskName = this.taskName;
+                json.frontOperator = this.frontOperator;
+                params._jsonData =json;
+
+                this.getUsers(this.currentPage, this.limit, params);
+            },
+            handleDeptChange (val) {
+                let dept = arrayFind(this.departments, 'id', val[0]);
+                if (dept && dept.children) {
+                    this.offices = dept.children;
+                } else {
+                    this.offices = [];
+                }
+                this.office = '';
+            },
+            handleSelectionChange(val){
+
+            },
+            checkReportDetail(row) {
+                let params = {};
+                params.reportId = row.reportId;
+                $getReportById(params).then(({ data }) => {
+                    this.loading = false;
+                    let bbzxRoot ="http://"+server_host+":8088/sofa/ams-bbzx/";
+                    let baseurl= "http://"+server_host+":8088/sofa/ReportViewer/";
+                    let url ="";
+                    console.log(data.rows[0]);
+                    console.log(data.rows[0].showType);
+                    if(data.rows[0].showType === "true"){
+                        url = baseurl+"ReportViewer.jsp?report="+JSON.stringify(data.rows[0])+"&bbzxRoot="+bbzxRoot;
+                    }else{
+                        url = baseurl+"ReportConfig.ctrl?method=reportOfficeViwer&report="+JSON.stringify(data.rows[0])+"&bbzxRoot="+bbzxRoot;
+                    }
+                    this.reportPath =url;
+                    this.showReport = true;
+
+                });
+
+
+
+                //},
+            },
+            reviewReport(row) {
+                //审核报告
+                let params ={};
+                params.processInstanceId = row.flowsn;
+                this.currentRow ={};
+                $queryHistoryComments(params).then(({data}) =>{
+                    this.comments = data.rows.toString();
+                    this.currentRow = row;
+                    this.copyVisible =true;
+                });
+
+            },
+            doQuery() {
+                let params = {};
+                params._startRow=this.total;
+                params._rowCount =this.limit;
+                params.userId = this.curUserId;
+                console.log(params);
+                let json = {};
+                json.flowsn = this.flowsn;
+                json.reportName = this.reportName;
+                json.taskName = this.taskName;
+                json.frontOperator = this.frontOperator;
+                params._jsonData =json;
+                console.log(params);
+                this.getUsers(this.currentPage, this.limit, params);
+                // this.loading = true;
+
+                // $reportMyFinishTask(params).then(({ data }) => {
+                //   this.loading = false;
+                //   this.tableData = data.rows;
+                //   this.total = data.total;
+                //   this.page = 1;
+                //   this.inputComment ='';
+                // });
+            },
+            resetQuery(){
+                this.flowsn="";
+                this.reportName="";
+                this.taskName="";
+                this.frontOperator="";
+            },
+            reloadTable(){
+                let params = {};
+                params.userId = this.curUserId;
+                params.page =this.currentPage;
+                params.limit = this.limit;
+
+                // this.getUsers(this.currentPage, this.limit, params);
+                this.loading = true;
+
+                $reportFinishTask(params).then(({ data }) => {
+                    this.loading = false;
+                    this.tableData = data.rows;
+                    this.total = data.total;
+                    this.page = 1;
+                    this.inputComment ='';
+                });
+            },
+            reviewAgree(){
+                let params ={};
+                params.taskId = this.currentRow.taskId;
+                params.comments = this.inputComment;
+                params.taskName = this.currentRow.taskName;
+                params.userId = this.curUserId;
+                $complateTask(params).then(({data}) =>{
+                    // console.log(data);
+                    // console.log("============1111=====");
+                    // console.log(data.message);
+                    if (data) {
+                        let result = eval('(' + data.message + ')');
+                        this.$alert(result.msg);
+                    }
+                    // this.$alert("审核成功!");
+                    this.copyVisible = false;
+                    this.reloadTable();
+
+                });
+
+            },
+            reviewReject(){
+                let params ={};
+                params.taskId = this.currentRow.taskId;
+                params.comments = this.inputComment;
+                params.userId = this.curUserId;
+                $rejectTask(params).then(({data}) =>{
+                    console.log(data);
+                    if(data.message.toString().indexOf("失败")>=0){
+                        this.$alert("驳回失败，发起人无法直接驳回当前任务");
+                        return false;
+                    }
+                    this.copyVisible = false;
+                    this.reloadTable();
+                });
+            },
+            getUserId() {
+                this.loginPath = "http://"+server_host+":8088/sofa/iReportViewer/"+"RestReportDownload.ctrl?method=setSessionUseInfo&userId="+this.curUserId;
+                // return curUserId;
+                // console.log(this);
+            },
+            getUsers(page, limit,params) {
+                this.loading = true;
+                params.page = page;
+                params.limit= limit;
+                $reportMyFinishTask(params).then(({ data }) => {
+                    this.loading = false;
+                    this.tableData = data.rows;
+                    this.total = data.total;
+
+                });
+            },
+            assetManage(user) {
+                alert('暂不可以用');
+                this.$store.commit('changeSelectedUser', user);
+                this.$router.push('/ReportManage/ReportManage');
+            },
+            handleAuthCopy () {
+                userDictQuery().then(({data}) => {
+                    this.selectedUsers = data;
+                });
+                this.copyVisible = true;
+            },
+            submitCopyForm (formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        authCopy(this.copyForm).then(({error}) => {
+                            if (!error) {
+                                this.$notify.success({
+                                    title: '操作成功',
+                                    message: '权限复制成功'
+                                });
+                                this.copyVisible = false;
+                            } else {
+                                this.$notify.error({
+                                    title: '操作失败',
+                                    message: error.message
+                                });
+                            }
+                        });
+                    } else {
+                        return false;
+                    }
+                });
+            },
+            doPasswordReset (id) {
+                passwordReset(id).then(({error}) => {
+                    this.$notify.success({
+                        title: '成功',
+                        message: '密码已被重置为123456'
+                    });
+                });
+            }
+        },
+        created(){
+            //console.log(server_host);
+            this.getUserId();
+            this.reloadTable();
+        }
+    };
+</script>
+<style lang="scss" scoped>
+    .user-mamager {
+        .el-col {
+            margin-bottom: 10px;
+        }
+
+        .list-actions {
+            float: right;
+            margin: 0 20px 10px 20px;
+        }
+    }
+</style>
