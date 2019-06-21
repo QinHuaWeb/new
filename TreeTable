@@ -1,0 +1,177 @@
+<template>
+    <div class="standardTable">
+        <el-table class="tree-table el-table--scrollable-y"
+            v-bind="tableProps"
+            :data="data"
+            v-loading="loading"
+            :height="height"
+            :row-class-name="rowClassName"
+            :row-style="showTr">
+            <el-table-column show-overflow-tooltip
+                v-for="(column, index) in columns"
+                :key="column.prop"
+                v-bind="column">
+                <el-table-column v-if="column.column"
+                    v-for="(item, i) in column.column" v-bind="item" :key="i">
+                    <template slot-scope="scope">
+                        <span v-if="spaceIconShow(i)"
+                            v-for="(space, levelIndex) in scope.row._level"
+                            :key="levelIndex"
+                            class="ms-tree-space">
+                            {{levelIndex}}
+                        </span>
+                        <span v-else-if="i===0"
+                            class="ms-tree-space"></span>
+                        <span v-if="item.render">{{item.render(scope.row[item.prop])}}</span>
+                        <span v-else>{{scope.row[item.prop]}}</span>
+                    </template>
+                </el-table-column>
+                <template slot-scope="scope">
+                    <span v-if="spaceIconShow(index)"
+                        v-for="(space, levelIndex) in scope.row._level"
+                        :key="levelIndex"
+                        class="ms-tree-space">
+                    </span>
+                    <span class="expand-button"
+                        v-if="toggleIconShow(index,scope.row)"
+                        @click="toggle(scope.$index, scope)">
+                        <i :class="[ scope.row._expanded ? 'el-icon-caret-bottom' : 'el-icon-caret-right' ]"></i>
+                    </span>
+                    <span v-else-if="index===0"
+                        class="ms-tree-space"></span>
+                    <span v-if="column.render">{{column.render(scope.row[column.prop])}}</span>
+                    <span v-else>{{scope.row[column.prop]}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column width="10"></el-table-column>
+        </el-table>
+    </div>
+</template>
+<script>
+import formatter from './formatter.js';
+export default {
+    name: 'tree-grid',
+    props: {
+        tableProps: {
+            type: Object
+        },
+        // 该属性是确认父组件传过来的数据是否已经是树形结构了，如果是，则不需要进行树形格式化
+        treeStructure: {
+            type: Boolean,
+            default: function () {
+                return false;
+            }
+        },
+        columns: {
+            type: Array,
+            default: function () {
+                return [];
+            }
+        },
+        dataSource: {
+            type: Array,
+            default: function () {
+                return [];
+            }
+        },
+        // 是否默认展开所有树
+        defaultExpandAll: {
+            type: Boolean,
+            default: function () {
+                return true;
+            }
+        },
+        loading: {
+            type: Boolean
+        },
+        height: {
+            type: Number,
+            default: 372
+        }
+    },
+    computed: {
+        // 格式化数据源
+        data: function () {
+            if (this.treeStructure) {
+                let data = formatter.treeToArray(this.dataSource, null, null, this.defaultExpandAll);
+                return data;
+            }
+            return this.dataSource;
+        }
+    },
+    methods: {
+        // 显示行
+        showTr: function ({ row, rowIndex }) {
+            let show = (row._parent ? (row._parent._expanded && row._parent._show) : true);
+            row._show = show;
+            return show ? '' : 'display:none;';
+        },
+        // 展开下级
+        toggle: function (trIndex) {
+            let record = this.data[trIndex];
+            record._expanded = !record._expanded;
+        },
+        // 显示层级关系的空格和图标
+        spaceIconShow(index) {
+            if (this.treeStructure && index === 0) {
+                return true;
+            }
+            return false;
+        },
+        toggleIconShow(index, record) {
+            if (this.treeStructure && index === 0 && record.children && record.children.length > 0) {
+                return true;
+            }
+            return false;
+        },
+        rowClassName({ row, rowIndex }) {
+            // console.log(row._level);
+            if (row._level === 0) {
+                return 'rowLevel1';
+            }
+            if (row._level === 1) {
+                return 'rowLevel2';
+            }
+        }
+    }
+};
+</script>
+<style lang="scss" scoped>
+.ms-tree-space {
+  position: relative;
+  top: 1px;
+  display: inline-block;
+  font-family: 'Glyphicons Halflings';
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1;
+  width: 18px;
+  height: 14px;
+}
+.ms-tree-space::before {
+  content: '';
+}
+.expand-button {
+  i {
+    color: #b5b5b5;
+    font-size: 18px;
+  }
+}
+</style>
+<style lang="scss">
+.tree-table {
+  .rowLevel1 {
+    .is-right {
+      color: #2A76CD;
+    }
+  }
+  &.el-table td{
+    //   border-bottom: none;
+  }
+  .el-table__row.rowLevel2{
+    td{
+      border-bottom: none;
+    }
+  }
+}
+</style>
